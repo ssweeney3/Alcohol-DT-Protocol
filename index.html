@@ -1,692 +1,146 @@
-<!--
-  CIWA-Ar Scoring Tool with Medication Taper Logic
-  Created by: Stephen P. Sweeney
-  Creation Date: December 9, 2025
-
-  Copyright © 2025 Stephen P. Sweeney. All rights reserved.
-
-  NOTICE:
-  This software, including its source code, design, structure, layout, logic,
-  and all related components, is the exclusive intellectual property of 
-  Stephen P. Sweeney. Unauthorized copying, reproduction, modification, 
-  distribution, public display, or creation of derivative works from this 
-  software, in whole or in part, is strictly prohibited without the prior
-  written consent of the copyright owner.
-
-  This software is protected under United States copyright law 
-  (Title 17 U.S.C. §101 et seq.) and applicable international copyright 
-  treaties. Any unauthorized use may result in civil and/or criminal penalties 
-  to the fullest extent permitted by law.
-
-  For licensing or permission requests, contact the copyright owner directly.
--->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>CIWA-Ar Scoring Tool</title>
-  <style>
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      margin: 0;
-      padding: 1rem;
-      background: #f5f5f5;
-    }
-    .app {
-      max-width: 1000px;
-      margin: 0 auto;
-      background: #ffffff;
-      padding: 1.5rem;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    }
-    h1 {
-      font-size: 1.4rem;
-      margin-top: 0;
-      text-align: center;
-    }
-    .patient-info {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 0.5rem;
-      margin-bottom: 1rem;
-    }
-    .patient-info label {
-      font-size: 0.85rem;
-      display: block;
-      margin-bottom: 0.25rem;
-    }
-    .patient-info input {
-      width: 100%;
-      padding: 0.35rem 0.45rem;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      font-size: 0.9rem;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alcohol Withdrawal Protocol (CIWA-Ar)</title>
 
-    .section-title {
-      font-weight: 600;
-      margin-top: 1rem;
-      margin-bottom: 0.35rem;
-      font-size: 0.9rem;
-    }
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
 
-    .vitals-rass-grid {
-      display: grid;
-      grid-template-columns: minmax(200px, 1.1fr) minmax(220px, 1.1fr);
-      gap: 1rem;
-      margin-bottom: 1rem;
-    }
-    @media (max-width: 800px) {
-      .vitals-rass-grid {
-        grid-template-columns: 1fr;
-      }
-    }
+        header {
+            background: #003366;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
 
-    .vitals-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
-      gap: 0.5rem;
-    }
-    .vitals-grid label {
-      font-size: 0.8rem;
-      display: block;
-      margin-bottom: 0.15rem;
-    }
-    .vitals-grid input {
-      width: 100%;
-      padding: 0.3rem 0.4rem;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      font-size: 0.85rem;
-    }
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            background: white;
+            padding: 20px 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
 
-    .scale-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 1rem;
-    }
-    fieldset {
-      border-radius: 10px;
-      border: 1px solid #ddd;
-      padding: 0.75rem;
-      background: #fafafa;
-    }
-    legend {
-      font-weight: 600;
-      padding: 0 0.25rem;
-    }
-    .options {
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-      margin-top: 0.35rem;
-      font-size: 0.85rem;
-    }
-    .option-row {
-      display: flex;
-      align-items: center;
-      gap: 0.35rem;
-    }
-    .option-row input {
-      margin: 0;
-    }
+        h1, h2 {
+            color: #003366;
+        }
 
-    .footer {
-      margin-top: 1.5rem;
-      display: grid;
-      grid-template-columns: minmax(220px, 1.1fr) minmax(260px, 1.1fr);
-      gap: 1rem;
-      align-items: flex-start;
-    }
-    @media (max-width: 800px) {
-      .footer {
-        grid-template-columns: 1fr;
-      }
-    }
+        .section {
+            margin-bottom: 30px;
+        }
 
-    .total-box {
-      background: #eef3ff;
-      border-radius: 10px;
-      padding: 0.75rem 1rem;
-      min-width: 220px;
-    }
-    .total-box strong {
-      font-size: 1.05rem;
-    }
-    .severity {
-      font-weight: 600;
-      margin-top: 0.25rem;
-    }
+        .score-box {
+            background: #e9f2ff;
+            padding: 15px;
+            border-left: 5px solid #003366;
+            margin-bottom: 20px;
+        }
 
-    .protocol-box {
-      background: #fefce8;
-      border-radius: 10px;
-      padding: 0.75rem 1rem;
-      border: 1px solid #eab30833;
-      min-width: 260px;
-    }
-    .protocol-box strong {
-      font-size: 0.9rem;
-    }
-    .protocol-body {
-      margin-top: 0.35rem;
-      font-size: 0.8rem;
-      line-height: 1.4;
-    }
+        ul {
+            padding-left: 20px;
+        }
 
-    .alerts-box {
-      margin-top: 1rem;
-      background: #fef2f2;
-      border-radius: 10px;
-      padding: 0.75rem 1rem;
-      border: 1px solid #fecaca;
-      font-size: 0.8rem;
-    }
-    .alerts-title {
-      font-weight: 600;
-      margin-bottom: 0.3rem;
-    }
-    .alerts-body {
-      line-height: 1.4;
-    }
-    .alert-item {
-      margin-bottom: 0.2rem;
-    }
-    .alert-danger {
-      color: #b91c1c;
-      font-weight: 600;
-    }
-    .alert-warning {
-      color: #92400e;
-      font-weight: 600;
-    }
+        footer {
+            text-align: center;
+            padding: 15px;
+            color: #666;
+            font-size: 14px;
+        }
 
-    .buttons-row {
-      margin-top: 1rem;
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-    }
-    button {
-      border: none;
-      border-radius: 999px;
-      padding: 0.5rem 0.9rem;
-      font-size: 0.85rem;
-      cursor: pointer;
-      background: #2563eb;
-      color: white;
-    }
-    button.secondary {
-      background: #e5e7eb;
-      color: #111827;
-    }
-
-    small {
-      font-size: 0.7rem;
-      color: #6b7280;
-    }
-  </style>
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+        }
+    </style>
 </head>
 <body>
-<div class="app">
-  <h1>CIWA-Ar Scoring Tool</h1>
 
-  <!-- Patient info -->
-  <div class="patient-info">
-    <div>
-      <label for="patient-name">Patient Name</label>
-      <input id="patient-name" type="text" />
-    </div>
-    <div>
-      <label for="clinician-name">Clinician</label>
-      <input id="clinician-name" type="text" />
-    </div>
-    <div>
-      <label for="assessment-time">Date / Time</label>
-      <input id="assessment-time" type="datetime-local" />
-    </div>
-  </div>
+<header>
+    <h1>Alcohol Withdrawal Protocol</h1>
+    <p>CIWA-Ar (Clinical Institute Withdrawal Assessment for Alcohol)</p>
+</header>
 
-  <!-- Vitals + RASS -->
-  <div class="section-title">Vitals &amp; RASS</div>
-  <div class="vitals-rass-grid">
-    <!-- Vitals -->
-    <div>
-      <div class="vitals-grid">
-        <div>
-          <label for="sbp">SBP (mmHg)</label>
-          <input id="sbp" type="number" class="vital-input" />
-        </div>
-        <div>
-          <label for="dbp">DBP (mmHg)</label>
-          <input id="dbp" type="number" class="vital-input" />
-        </div>
-        <div>
-          <label for="hr">HR (bpm)</label>
-          <input id="hr" type="number" class="vital-input" />
-        </div>
-        <div>
-          <label for="rr">RR (breaths/min)</label>
-          <input id="rr" type="number" class="vital-input" />
-        </div>
-        <div>
-          <label for="temp">Temp (°F)</label>
-          <input id="temp" type="number" step="0.1" class="vital-input" />
-        </div>
-      </div>
+<div class="container">
+
+    <div class="section">
+        <h2>Purpose</h2>
+        <p>
+            The CIWA-Ar scale is a validated tool used to assess the severity of alcohol withdrawal.
+            Scores guide medication dosing and determine the need for higher-level monitoring.
+        </p>
     </div>
 
-    <!-- RASS -->
-    <div>
-      <fieldset>
-        <legend>RASS (Richmond Agitation-Sedation Scale)</legend>
-        <div class="options">
-          <label class="option-row"><input type="radio" name="rass" value="4"> +4 Combative</label>
-          <label class="option-row"><input type="radio" name="rass" value="3"> +3 Very agitated</label>
-          <label class="option-row"><input type="radio" name="rass" value="2"> +2 Agitated</label>
-          <label class="option-row"><input type="radio" name="rass" value="1"> +1 Restless</label>
-          <label class="option-row"><input type="radio" name="rass" value="0" checked> 0 Alert & calm</label>
-          <label class="option-row"><input type="radio" name="rass" value="-1"> -1 Drowsy</label>
-          <label class="option-row"><input type="radio" name="rass" value="-2"> -2 Light sedation</label>
-          <label class="option-row"><input type="radio" name="rass" value="-3"> -3 Moderate sedation</label>
-          <label class="option-row"><input type="radio" name="rass" value="-4"> -4 Deep sedation</label>
-          <label class="option-row"><input type="radio" name="rass" value="-5"> -5 Unarousable</label>
-        </div>
-      </fieldset>
-    </div>
-  </div>
+    <div class="section">
+        <h2>CIWA-Ar Scoring</h2>
 
-  <!-- Alerts -->
-  <div class="alerts-box">
-    <div class="alerts-title">Safety alerts</div>
-    <div id="alerts-text" class="alerts-body">
-      No safety alerts based on current entries.
-    </div>
-    <small>This tool does not replace clinical judgment or institutional protocols.</small>
-  </div>
-
-  <!-- CIWA-Ar Symptom Assessment -->
-  <div class="section-title" style="margin-top:1.25rem;">CIWA-Ar Symptom Assessment</div>
-
-  <div class="scale-grid">
-    <!-- Symptom fieldsets (unchanged) -->
-    <!-- ... full CIWA symptom section left intact ... -->
-    <!-- 1. Nausea & Vomiting -->
-    <fieldset data-item="nausea">
-      <legend>1. Nausea &amp; vomiting</legend>
-      <div class="options">
-        <label class="option-row"><input type="radio" name="nausea" value="0" checked> 0 – None</label>
-        <label class="option-row"><input type="radio" name="nausea" value="1"> 1</label>
-        <label class="option-row"><input type="radio" name="nausea" value="2"> 2</label>
-        <label class="option-row"><input type="radio" name="nausea" value="3"> 3</label>
-        <label class="option-row"><input type="radio" name="nausea" value="4"> 4 – Intermittent nausea/dry heaves</label>
-        <label class="option-row"><input type="radio" name="nausea" value="5"> 5</label>
-        <label class="option-row"><input type="radio" name="nausea" value="6"> 6</label>
-        <label class="option-row"><input type="radio" name="nausea" value="7"> 7 – Constant nausea/vomiting</label>
-      </div>
-    </fieldset>
-
-    <!-- 2. Paroxysmal Sweats -->
-    <fieldset data-item="sweats">
-      <legend>2. Paroxysmal sweats</legend>
-      <div class="options">
-        <label class="option-row"><input type="radio" name="sweats" value="0" checked> 0 – None</label>
-        <label class="option-row"><input type="radio" name="sweats" value="1"> 1 – Palms moist</label>
-        <label class="option-row"><input type="radio" name="sweats" value="2"> 2</label>
-        <label class="option-row"><input type="radio" name="sweats" value="3"> 3</label>
-        <label class="option-row"><input type="radio" name="sweats" value="4"> 4 – Beads of sweat on forehead</label>
-        <label class="option-row"><input type="radio" name="sweats" value="5"> 5</label>
-        <label class="option-row"><input type="radio" name="sweats" value="6"> 6</label>
-        <label class="option-row"><input type="radio" name="sweats" value="7"> 7 – Drenching sweats</label>
-      </div>
-    </fieldset>
-
-    <!-- 3. Anxiety -->
-    <fieldset data-item="anxiety">
-      <legend>3. Anxiety</legend>
-      <div class="options">
-        <label class="option-row"><input type="radio" name="anxiety" value="0" checked> 0 – None</label>
-        <label class="option-row"><input type="radio" name="anxiety" value="1"> 1</label>
-        <label class="option-row"><input type="radio" name="anxiety" value="2"> 2</label>
-        <label class="option-row"><input type="radio" name="anxiety" value="3"> 3</label>
-        <label class="option-row"><input type="radio" name="anxiety" value="4"> 4 – Moderately anxious</label>
-        <label class="option-row"><input type="radio" name="anxiety" value="5"> 5</label>
-        <label class="option-row"><input type="radio" name="anxiety" value="6"> 6</label>
-        <label class="option-row"><input type="radio" name="anxiety" value="7"> 7 – Acute panic</label>
-      </div>
-    </fieldset>
-
-    <!-- 4. Agitation -->
-    <fieldset data-item="agitation">
-      <legend>4. Agitation</legend>
-      <div class="options">
-        <label class="option-row"><input type="radio" name="agitation" value="0" checked> 0 – Normal activity</label>
-        <label class="option-row"><input type="radio" name="agitation" value="1"> 1 – Slightly more active</label>
-        <label class="option-row"><input type="radio" name="agitation" value="2"> 2</label>
-        <label class="option-row"><input type="radio" name="agitation" value="3"> 3</label>
-        <label class="option-row"><input type="radio" name="agitation" value="4"> 4 – Restless / fidgety</label>
-        <label class="option-row"><input type="radio" name="agitation" value="5"> 5</label>
-        <label class="option-row"><input type="radio" name="agitation" value="6"> 6</label>
-        <label class="option-row"><input type="radio" name="agitation" value="7"> 7 – Paces or thrashes</label>
-      </div>
-    </fieldset>
-
-    <!-- 5. Tremor -->
-    <fieldset data-item="tremor">
-      <legend>5. Tremor</legend>
-      <div class="options">
-        <label class="option-row"><input type="radio" name="tremor" value="0" checked> 0 – None</label>
-        <label class="option-row"><input type="radio" name="tremor" value="1"> 1 – Felt at fingertips</label>
-        <label class="option-row"><input type="radio" name="tremor" value="2"> 2</label>
-        <label class="option-row"><input type="radio" name="tremor" value="3"> 3</label>
-        <label class="option-row"><input type="radio" name="tremor" value="4"> 4 – Tremor w/ arms extended</label>
-        <label class="option-row"><input type="radio" name="tremor" value="5"> 5</label>
-        <label class="option-row"><input type="radio" name="tremor" value="6"> 6</label>
-        <label class="option-row"><input type="radio" name="tremor" value="7"> 7 – Severe tremor</label>
-      </div>
-    </fieldset>
-
-    <!-- 6. Headache -->
-    <fieldset data-item="headache">
-      <legend>6. Headache</legend>
-      <div class="options">
-        <label class="option-row"><input type="radio" name="headache" value="0" checked> 0 – None</label>
-        <label class="option-row"><input type="radio" name="headache" value="1"> 1 – Very mild</label>
-        <label class="option-row"><input type="radio" name="headache" value="2"> 2 – Mild</label>
-        <label class="option-row"><input type="radio" name="headache" value="3"> 3 – Moderate</label>
-        <label class="option-row"><input type="radio" name="headache" value="4"> 4 – Moderately severe</label>
-        <label class="option-row"><input type="radio" name="headache" value="5"> 5 – Severe</label>
-        <label class="option-row"><input type="radio" name="headache" value="6"> 6 – Very severe</label>
-        <label class="option-row"><input type="radio" name="headache" value="7"> 7 – Extremely severe</label>
-      </div>
-    </fieldset>
-
-    <!-- 7. Auditory disturbances -->
-    <fieldset data-item="auditory">
-      <legend>7. Auditory disturbances</legend>
-      <div class="options">
-        <label class="option-row"><input type="radio" name="auditory" value="0" checked> 0 – None</label>
-        <label class="option-row"><input type="radio" name="auditory" value="1"> 1 – Startles easily</label>
-        <label class="option-row"><input type="radio" name="auditory" value="2"> 2 – Mild hallucinations</label>
-        <label class="option-row"><input type="radio" name="auditory" value="3"> 3</label>
-        <label class="option-row"><input type="radio" name="auditory" value="4"> 4 – Moderately severe</label>
-        <label class="option-row"><input type="radio" name="auditory" value="5"> 5 – Severe hallucinations</label>
-        <label class="option-row"><input type="radio" name="auditory" value="6"> 6 – Extremely severe</label>
-        <label class="option-row"><input type="radio" name="auditory" value="7"> 7 – Continuous hallucinations</label>
-      </div>
-    </fieldset>
-
-    <!-- 8. Visual disturbances -->
-    <fieldset data-item="visual">
-      <legend>8. Visual disturbances</legend>
-      <div class="options">
-        <label class="option-row"><input type="radio" name="visual" value="0" checked> 0 – None</label>
-        <label class="option-row"><input type="radio" name="visual" value="1"> 1 – Mild light sensitivity</label>
-        <label class="option-row"><input type="radio" name="visual" value="2"> 2</label>
-        <label class="option-row"><input type="radio" name="visual" value="3"> 3</label>
-        <label class="option-row"><input type="radio" name="visual" value="4"> 4 – Visual hallucinations</label>
-        <label class="option-row"><input type="radio" name="visual" value="5"> 5 – Severe hallucinations</label>
-        <label class="option-row"><input type="radio" name="visual" value="6"> 6 – Extremely severe</label>
-        <label class="option-row"><input type="radio" name="visual" value="7"> 7 – Continuous hallucinations</label>
-      </div>
-    </fieldset>
-
-    <!-- 9. Tactile disturbances -->
-    <fieldset data-item="tactile">
-      <legend>9. Tactile disturbances</legend>
-      <div class="options">
-        <label class="option-row"><input type="radio" name="tactile" value="0" checked> 0 – None</label>
-        <label class="option-row"><input type="radio" name="tactile" value="1"> 1 – Mild paresthesias</label>
-        <label class="option-row"><input type="radio" name="tactile" value="2"> 2</label>
-        <label class="option-row"><input type="radio" name="tactile" value="3"> 3</label>
-        <label class="option-row"><input type="radio" name="tactile" value="4"> 4 – Hallucinations</label>
-        <label class="option-row"><input type="radio" name="tactile" value="5"> 5 – Severe</label>
-        <label class="option-row"><input type="radio" name="tactile" value="6"> 6 – Extremely severe</label>
-        <label class="option-row"><input type="radio" name="tactile" value="7"> 7 – Continuous hallucinations</label>
-      </div>
-    </fieldset>
-
-    <!-- 10. Orientation -->
-    <fieldset data-item="orientation">
-      <legend>10. Orientation / sensorium</legend>
-      <div class="options">
-        <label class="option-row"><input type="radio" name="orientation" value="0" checked> 0 – Fully oriented</label>
-        <label class="option-row"><input type="radio" name="orientation" value="1"> 1 – Cannot do serial additions</label>
-        <label class="option-row"><input type="radio" name="orientation" value="2"> 2 – Disoriented < 2 days</label>
-        <label class="option-row"><input type="radio" name="orientation" value="3"> 3 – Disoriented > 2 days</label>
-        <label class="option-row"><input type="radio" name="orientation" value="4"> 4 – Disoriented to person/place</label>
-      </div>
-    </fieldset>
-  </div>
-
-  <!-- FOOTER -->
-  <div class="footer">
-
-    <!-- Left: Total Score -->
-    <div class="total-box">
-      <div><strong>Total CIWA-Ar score: <span id="total-score">0</span> / 67</strong></div>
-      <div class="severity">Severity: <span id="severity-label">Very mild or none</span></div>
-      <small>Guide: &lt;10 very mild; 10–15 mild; 16–20 moderate; &gt;20 severe.</small>
-
-      <div class="buttons-row">
-        <button id="reset-btn" class="secondary" type="button">Clear scores</button>
-        <button id="print-btn" type="button">Print / Save as PDF</button>
-      </div>
-    </div>
-
-    <!-- Right: Protocol + Taper Logic -->
-    <div class="protocol-box">
-      <div><strong>Suggested protocol (for reference only)</strong></div>
-
-      <div id="protocol-text" class="protocol-body">
-        CIWA-Ar &lt; 2 – No medication protocol triggered based on this tool.
-      </div>
-
-      <!-- Taper Day Tracker -->
-      <div style="margin-top:0.6rem; padding-top:0.6rem; border-top:1px solid #e5e7eb;">
-        <label for="taper-day" style="font-size:0.8rem; font-weight:600;">Taper day tracker</label>
-
-        <select id="taper-day" style="font-size:0.8rem; padding:0.25rem 0.4rem; border-radius:6px; border:1px solid #d1d5db;">
-          <option value="1">Day 1</option>
-          <option value="2">Day 2</option>
-          <option value="3">Day 3</option>
-          <option value="4">Day 4</option>
-          <option value="5">Day 5</option>
-        </select>
-
-        <div id="taper-dose-display" style="margin-top:0.45rem; font-size:0.8rem;">
-          <div><strong>Regimen:</strong> <span id="taper-regimen-label">None (no taper regimen selected)</span></div>
-          <div><strong>Day:</strong> <span id="taper-day-label">—</span></div>
-          <div><strong>Dose:</strong> <span id="taper-dose-label">No taper regimen selected based on current CIWA-Ar score.</span></div>
+        <div class="score-box">
+            <strong>Score 0–9:</strong> Minimal withdrawal — usually no medication required.  
         </div>
 
-        <small>Uses whichever taper regimen is suggested above.</small>
-      </div>
+        <div class="score-box">
+            <strong>Score 10–19:</strong> Mild to moderate withdrawal — medication recommended.  
+        </div>
 
-      <small>Always use clinical judgment and follow institutional protocol.</small>
+        <div class="score-box">
+            <strong>Score 20+:</strong> Severe withdrawal — high risk for complications. Consider higher-level care.
+        </div>
+
+        <p><strong>Assessment Items:</strong></p>
+        <ul>
+            <li>Nausea / vomiting</li>
+            <li>Tremor</li>
+            <li>Paroxysmal sweats</li>
+            <li>Anxiety</li>
+            <li>Agitation</li>
+            <li>Tactile disturbances</li>
+            <li>Auditory disturbances</li>
+            <li>Visual disturbances</li>
+            <li>Headache</li>
+            <li>Orientation & clouding of sensorium</li>
+        </ul>
     </div>
-  </div>
 
-  <!-- COPYRIGHT FOOTER -->
-  <small style="display:block; text-align:center; margin-top:2rem; opacity:0.6;">
-    © 2025 Stephen P. Sweeney. All rights reserved.
-  </small>
+    <div class="section">
+        <h2>Medication Protocol</h2>
+        <p><strong>Example symptom-triggered benzodiazepine protocol:</strong></p>
+        <ul>
+            <li><strong>CIWA 8–10:</strong> Give lorazepam 1–2 mg PO/IV</li>
+            <li><strong>CIWA 11–15:</strong> Give lorazepam 2–4 mg PO/IV</li>
+            <li><strong>CIWA >15:</strong> Give lorazepam 4 mg PO/IV</li>
+        </ul>
+        <p>
+            Reassess CIWA every 1–2 hours and repeat dosing as needed based on symptoms.
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>Escalation Criteria</h2>
+        <p>Consider higher-level monitoring or hospital transfer if any of the following occur:</p>
+        <ul>
+            <li>CIWA score persistently >20</li>
+            <li>Uncontrolled agitation</li>
+            <li>Seizures</li>
+            <li>Hallucinations</li>
+            <li>Medical instability (vitals abnormal)</li>
+        </ul>
+    </div>
+
 </div>
-<script>
-  function getRASS() {
-    const checked = document.querySelector('input[name="rass"]:checked');
-    return checked ? parseInt(checked.value, 10) : null;
-  }
 
-  function getVitals() {
-    const sbp = parseFloat(document.getElementById('sbp').value);
-    const dbp = parseFloat(document.getElementById('dbp').value);
-    const hr = parseFloat(document.getElementById('hr').value);
-    const rr = parseFloat(document.getElementById('rr').value);
-    const temp = parseFloat(document.getElementById('temp').value);
-    return { sbp, dbp, hr, rr, temp };
-  }
-
-  let currentRegimen = 'none';
-
-  const taperDoses = {
-    gabapentin: {
-      1: 'Gabapentin 300 mg PO every 6 hours',
-      2: 'Gabapentin 300 mg PO every 8 hours',
-      3: 'Gabapentin 300 mg PO every 12 hours',
-      4: 'Gabapentin 300 mg PO every 24 hours',
-      5: 'Stop (no scheduled dose)'
-    },
-    diazepam: {
-      1: 'Diazepam 10 mg PO four times daily (QID)',
-      2: 'Diazepam 10 mg PO three times daily (TID)',
-      3: 'Diazepam 10 mg PO twice daily (BID)',
-      4: 'Diazepam 10 mg PO once daily (QD)',
-      5: 'Stop (no scheduled dose)'
-    }
-  };
-
-  function shouldHoldSedatives(rass, v) {
-    if (rass <= -1) return true;
-    if (v.sbp < 100) return true;
-    if (v.dbp < 60) return true;
-    if (v.hr < 60) return true;
-    if (v.rr < 12) return true;
-    return false;
-  }
-
-  function updateTaperDoseDisplay(regimen) {
-    const day = parseInt(document.getElementById('taper-day').value, 10);
-    const regLabel = document.getElementById('taper-regimen-label');
-    const dayLabel = document.getElementById('taper-day-label');
-    const doseLabel = document.getElementById('taper-dose-label');
-
-    if (regimen === 'none') {
-      regLabel.textContent = 'None (no taper regimen selected)';
-      dayLabel.textContent = '—';
-      doseLabel.textContent = 'No taper regimen selected based on current CIWA-Ar score.';
-      return;
-    }
-
-    regLabel.textContent = regimen === 'gabapentin' ? 'Gabapentin taper' : 'Diazepam taper';
-    dayLabel.textContent = day;
-
-    const dose = taperDoses[regimen][day];
-    doseLabel.textContent = dose;
-  }
-
-  function updateProtocol(total) {
-    const el = document.getElementById('protocol-text');
-    const rass = getRASS();
-    const v = getVitals();
-    let html = '';
-
-    if (total < 2) {
-      currentRegimen = 'none';
-      html = 'CIWA-Ar < 2 – No medication protocol triggered.';
-    } else if (total < 8) {
-      currentRegimen = 'gabapentin';
-      html =
-        'CIWA-Ar 2–7 – Consider Gabapentin taper:<br>' +
-        'Day 1: Gabapentin 300 mg q6h<br>' +
-        'Day 2: q8h<br>' +
-        'Day 3: q12h<br>' +
-        'Day 4: q24h<br>' +
-        'Day 5: Stop.';
-    } else {
-      currentRegimen = 'diazepam';
-      html =
-        'CIWA-Ar ≥ 8 – Consider Diazepam taper:<br>' +
-        'Day 1: 10 mg QID<br>' +
-        'Day 2: 10 mg TID<br>' +
-        'Day 3: 10 mg BID<br>' +
-        'Day 4: 10 mg QD<br>' +
-        'Day 5: Stop.';
-    }
-
-    if (total > 8 || rass > 2) {
-      html += '<br><br><strong>PRN:</strong> Diazepam 10 mg PO STAT if CIWA > 8 or RASS > 2.';
-    }
-
-    if (shouldHoldSedatives(rass, v)) {
-      html += '<br><br><span class="alert-danger">Hold sedatives — vitals or RASS meet hold criteria.</span>';
-    }
-
-    el.innerHTML = html;
-    updateTaperDoseDisplay(currentRegimen);
-  }
-
-  function updateAlerts() {
-    const el = document.getElementById('alerts-text');
-    const rass = getRASS();
-    const v = getVitals();
-    const a = [];
-
-    if (rass <= -1) {
-      a.push('<div class="alert-item alert-danger">RASS ≤ -1 — Do NOT give sedatives.</div>');
-    }
-
-    if (v.sbp < 100 || v.dbp < 60 || v.hr < 60 || v.rr < 12) {
-      a.push('<div class="alert-item alert-danger">Low vital signs — Hold sedatives.</div>');
-    }
-
-    if (v.sbp > 150 || v.dbp > 100 || v.hr > 110 || v.rr > 22 || v.temp > 100.4) {
-      a.push('<div class="alert-item alert-warning">Abnormal vital signs — Notify provider.</div>');
-    }
-
-    el.innerHTML = a.length ? a.join('') : 'No safety alerts based on current entries.';
-  }
-
-  function calculateTotal() {
-    const fields = ["nausea","sweats","anxiety","agitation","tremor","headache","auditory","visual","tactile","orientation"];
-    let total = 0;
-
-    fields.forEach(f => {
-      const c = document.querySelector(`input[name="${f}"]:checked`);
-      total += parseInt(c.value, 10);
-    });
-
-    document.getElementById('total-score').textContent = total;
-
-    let sev = "Very mild or none";
-    if (total >= 10 && total <= 15) sev = "Mild";
-    else if (total <= 20) sev = "Moderate";
-    else if (total > 20) sev = "Severe";
-
-    document.getElementById('severity-label').textContent = sev;
-
-    updateProtocol(total);
-    updateAlerts();
-  }
-
-  document.addEventListener('change', e => {
-    if (e.target.matches('input[type="radio"]')) calculateTotal();
-  });
-
-  document.getElementById('taper-day').addEventListener('change', () => {
-    updateTaperDoseDisplay(currentRegimen);
-  });
-
-  document.querySelectorAll('.vital-input').forEach(i => {
-    i.addEventListener('input', calculateTotal);
-  });
-
-  document.getElementById('reset-btn').addEventListener('click', () => {
-    document.querySelectorAll('fieldset[data-item]').forEach(fs => {
-      fs.querySelector('input[value="0"]').checked = true;
-    });
-    document.querySelector('input[name="rass"][value="0"]').checked = true;
-    document.querySelectorAll('.vital-input').forEach(i => i.value = '');
-    calculateTotal();
-  });
-
-  document.getElementById('print-btn').addEventListener('click', () => window.print());
-
-  calculateTotal();
-</script>
+<footer>
+    <p>Alcohol Withdrawal Protocol • CIWA-Ar • © 2025</p>
+</footer>
 
 </body>
 </html>
+
